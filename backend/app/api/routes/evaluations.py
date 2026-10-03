@@ -9,6 +9,7 @@ from app.schemas.evaluations import (
     EvaluationListResponse,
     EvaluationResponse,
     EvaluationStats,
+    EvaluationUpdate,
 )
 from app.services.evaluation_service import (
     create_evaluation,
@@ -17,6 +18,7 @@ from app.services.evaluation_service import (
     get_recent,
     get_stats,
     list_evaluations,
+    update_evaluation,
 )
 
 router = APIRouter(prefix="/evaluations", tags=["evaluations"])
@@ -62,6 +64,16 @@ def create_draft(
     user: CurrentUser,
 ) -> EvaluationResponse:
     return create_evaluation(evaluations, user, payload)
+
+
+@router.put("/{evaluation_id}", response_model=EvaluationResponse)
+def update_draft(
+    evaluation_id: str,
+    payload: EvaluationUpdate,
+    evaluations: Evaluations,
+    user: CurrentUser,
+) -> EvaluationResponse:
+    return update_evaluation(evaluations, user, evaluation_id, payload)
 
 
 @router.get("/{evaluation_id}", response_model=EvaluationResponse)

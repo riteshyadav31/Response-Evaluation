@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, PencilLine } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../services/api.js'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { EmptyState } from '../components/EmptyState.jsx'
@@ -15,6 +15,7 @@ function formatDate(value) {
 export function EvaluationDetailPage() {
   const { evaluationId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [evaluation, setEvaluation] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -66,15 +67,16 @@ export function EvaluationDetailPage() {
       <PageHeading
         eyebrow="EVALUATION WORKSPACE"
         title={evaluation.title}
-        description="This placeholder keeps the draft ready for the next evaluation module."
+        description="Review the saved prompt, responses, and any supporting context."
         action={
           evaluation.status === 'draft' ? (
-            <button type="button" className="button button-primary" onClick={() => navigate(`/evaluations/${evaluation.id}`)}>
+            <button type="button" className="button button-primary" onClick={() => navigate(`/evaluations/${evaluation.id}/edit`)}>
               <PencilLine size={16} />Continue draft
             </button>
           ) : null
         }
       />
+      {location.state?.notice ? <div className="save-confirmation" role="status">{location.state.notice}</div> : null}
       <div className="content-surface detail-panel">
         <dl className="detail-list">
           <div>
@@ -94,8 +96,30 @@ export function EvaluationDetailPage() {
             <dd>{evaluation.category || 'Unassigned'}</dd>
           </div>
         </dl>
+        {evaluation.input ? (
+          <section className="evaluation-detail-inputs" aria-label="Saved evaluation input">
+            <div><h2>Original Prompt</h2><p>{evaluation.input.original_prompt}</p></div>
+            <div className="evaluation-detail-responses">
+              <div><h2>Response A</h2><p>{evaluation.input.response_a}</p></div>
+              <div><h2>Response B</h2><p>{evaluation.input.response_b}</p></div>
+            </div>
+            {Object.values(evaluation.context || {}).some(Boolean) ? (
+              <details className="evaluation-detail-context">
+                <summary>Advanced Context</summary>
+                <dl>
+                  {Object.entries({
+                    'User Context': evaluation.context.user_context,
+                    'Previous Conversation': evaluation.context.previous_conversation,
+                    'Reference Evidence': evaluation.context.reference_evidence,
+                    'Evaluation Notes': evaluation.context.evaluation_notes,
+                  }).filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+                </dl>
+              </details>
+            ) : null}
+          </section>
+        ) : <p className="muted-copy">No response input was saved for this evaluation.</p>}
         <div className="detail-callout">
-          <p>This draft is intentionally lightweight and will be expanded in Module 4 with the response workspace and scoring flow.</p>
+          <p>AI analysis is not part of this workspace yet. Your original inputs remain available for the next review step.</p>
           <Link className="button button-secondary" to="/evaluations"><ArrowLeft size={16} />Back to evaluation history</Link>
         </div>
       </div>

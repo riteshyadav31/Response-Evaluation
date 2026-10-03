@@ -103,6 +103,13 @@ class FakeEvaluationsCollection:
                 return type("DeleteResult", (), {"deleted_count": 1})()
         return type("DeleteResult", (), {"deleted_count": 0})()
 
+    def update_one(self, query: dict, update: dict):
+        for document in self.documents:
+            if all(document.get(key) == value for key, value in query.items()):
+                document.update(update.get("$set", {}))
+                return type("UpdateResult", (), {"matched_count": 1, "modified_count": 1})()
+        return type("UpdateResult", (), {"matched_count": 0, "modified_count": 0})()
+
 
 @pytest.fixture
 def evaluations() -> FakeEvaluationsCollection:

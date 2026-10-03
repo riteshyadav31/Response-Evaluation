@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout.jsx'
 import { DashboardPage } from '../pages/DashboardPage.jsx'
 import { EvaluationDetailPage } from '../pages/EvaluationDetailPage.jsx'
+import { EditEvaluationPage } from '../pages/EditEvaluationPage.jsx'
 import { HistoryPage } from '../pages/HistoryPage.jsx'
 import { NewEvaluationPage } from '../pages/NewEvaluationPage.jsx'
 import { ReportsPage } from '../pages/ReportsPage.jsx'
@@ -21,6 +22,7 @@ export function AppRoutes() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="evaluations" element={<HistoryPage />} />
         <Route path="evaluations/new" element={<NewEvaluationPage />} />
+        <Route path="evaluations/:evaluationId/edit" element={<EditEvaluationPage />} />
         <Route path="evaluations/:evaluationId" element={<EvaluationDetailPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="reports" element={<ReportsPage />} />

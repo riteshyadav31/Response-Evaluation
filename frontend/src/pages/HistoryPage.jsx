@@ -146,7 +146,7 @@ export function HistoryPage() {
                               <FileText size={14} />Open
                             </button>
                             {evaluation.status === 'draft' ? (
-                              <button type="button" className="link-button" onClick={() => navigate(`/evaluations/${evaluation.id}`)}>
+                              <button type="button" className="link-button" onClick={() => navigate(`/evaluations/${evaluation.id}/edit`)}>
                                 <PencilLine size={14} />Continue
                               </button>
                             ) : null}

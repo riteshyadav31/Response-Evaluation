@@ -9,9 +9,12 @@ from pymongo.errors import PyMongoError
 
 from app.schemas.evaluations import (
     EvaluationCreate,
+    EvaluationContext,
+    EvaluationInput,
     EvaluationListResponse,
     EvaluationResponse,
     EvaluationStats,
+    EvaluationUpdate,
 )
 
 DEFAULT_TITLE = "Response Quality Evaluation"
@@ -29,6 +32,8 @@ def _evaluation_response(document: dict) -> EvaluationResponse:
         title=document["title"],
         status=document["status"],
         category=document.get("category"),
+        input=EvaluationInput.model_validate(document["input"]) if document.get("input") is not None else None,
+        context=EvaluationContext.model_validate(document.get("context") or {}),
         created_at=_utc_datetime(document["created_at"]),
         updated_at=_utc_datetime(document["updated_at"]),
         completed_at=_utc_datetime(document.get("completed_at")),
@@ -117,6 +122,8 @@ def create_evaluation(
         "title": payload.title or DEFAULT_TITLE,
         "status": "draft",
         "category": None,
+        "input": payload.input.model_dump(),
+        "context": payload.context.model_dump(),
         "created_at": now,
         "updated_at": now,
         "completed_at": None,
@@ -127,6 +134,41 @@ def create_evaluation(
         raise _storage_unavailable() from None
     document["_id"] = result.inserted_id
     return _evaluation_response(document)
+
+
+def update_evaluation(
+    evaluations: Collection,
+    user: dict,
+    evaluation_id: str,
+    payload: EvaluationUpdate,
+) -> EvaluationResponse:
+    object_id = _parse_object_id(evaluation_id)
+    owner_filter = {"_id": object_id, **_user_filter(user)}
+    try:
+        existing = evaluations.find_one(owner_filter)
+        if existing is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation not found.")
+        if existing.get("status") != "draft":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only draft evaluations can be edited.")
+
+        evaluations.update_one(
+            {**owner_filter, "status": "draft"},
+            {"$set": {
+                "title": payload.title or DEFAULT_TITLE,
+                "input": payload.input.model_dump(),
+                "context": payload.context.model_dump(),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+        updated = evaluations.find_one(owner_filter)
+    except PyMongoError:
+        raise _storage_unavailable() from None
+
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation not found.")
+    if updated.get("status") != "draft":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only draft evaluations can be edited.")
+    return _evaluation_response(updated)
 
 
 def get_evaluation(evaluations: Collection, user: dict, evaluation_id: str) -> EvaluationResponse:
